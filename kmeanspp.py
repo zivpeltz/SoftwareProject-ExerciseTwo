@@ -8,8 +8,24 @@ def calculate_distance(p,q): #p and q are arrays representing points
         sum_of_deltas += (p[i] - q[i]) ** 2
     return sum_of_deltas**0.5
 
-def kmeans_plus(k,points_arr):
-    pass
+def calculate_min_distance(centers, p):
+    min = calculate_distance(centers[0], p)
+    for i in range(1,len(centers)):
+        temp = calculate_distance(centers[i], p)
+        if temp < min:
+            min = temp
+    return min
+
+def kmeansplus_Init(k, points_arr):
+    x = np.random.choice(points_arr)
+    centers=[x]
+    for i in range (k-1):
+        distance_arr = [calculate_min_distance(centers, p) for p in points_arr]
+        sum = sum(distance_arr)
+        prob_arr = [distance_arr[n]/sum for n in range(len(points_arr))]
+        centers.append(np.random.choice(points_arr, p=prob_arr))
+    return centers
+
 
 
 def is_float(value):
@@ -47,6 +63,7 @@ def parse_points(file_A, file_B):
 
 
 def main():
+    np.random.seed(1234)
     #reading user CMD arguments
     provided_iter = 1 #in the case when iter is provided, the fields change index by 1
     if len(sys.argv) == 1 or len(sys.argv) > 6:
