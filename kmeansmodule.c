@@ -142,25 +142,25 @@ cleanup:
 }
 
 /* module's function table */
-static PyMethodDef kmeanssp_FunctionsTable[] = {
+static PyMethodDef mykmeanssp_FunctionsTable[] = {
     {
         "fit",                 /* name exposed to Python */
         kmeansLib_fit,         /* C wrapper function */
         METH_VARARGS,          /* receives positional arguments */
-        "Calculates k-means"   /* documentation */
+        PyDoc_STR("calculates kmeans, receives k, iter, epsilon, list of centroids (calculated by kmean++), num of points, dim, points list")  /* documentation */
     },
     {NULL, NULL, 0, NULL}
 };
 
 /* module definition */
-static struct PyModuleDef kmeanssp_Module = {
+static struct PyModuleDef mykmeanssp_Module = {
     PyModuleDef_HEAD_INIT,
-    "kmeanssp",   /* module name */
+    "mykmeanssp",   /* module name */
     "kmeans Python wrapper for custom C extension library.",
     -1,
-    kmeanssp_FunctionsTable
+    mykmeanssp_FunctionsTable
 };
 
-PyMODINIT_FUNC PyInit_kmeanssp(void) {
-    return PyModule_Create(&kmeanssp_Module);
+PyMODINIT_FUNC PyInit_mykmeanssp(void) {
+    return PyModule_Create(&mykmeanssp_Module);
 }
