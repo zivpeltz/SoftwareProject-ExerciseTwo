@@ -79,86 +79,66 @@ static int *count_cluster_points(int k, double **centroids, double **points, int
     return counter_arr;
 }
 
-/*
- * Returns 0 on success, 1 on allocation failure (caller prints "An Error Has Occurred" and exits 1).
- */
-static int cluster_handle(int k, int iter, int num_of_points, int dim, double **points) {
+
+static double **cluster_handle(int k, int iter, double eps, double **centroids, int num_of_points, int dim, double **points) {
     int i, j, l, curr, convergence;
     int *counter_arr = NULL, *counter_arr_copy = NULL;
-    double **centroids = NULL, **updated_centroids = NULL, ***clusters = NULL;
-    double *old = NULL;
-    int *owned = NULL; /* owned[j]=1 if centroids[j] must be freed, 0 if it points into points[] */
-
-    int status = 1; /* assume failure until we succeed */
+    double ***clusters = NULL;
+    int ok = 1; /* flag in case of failure*/
 
     clusters = (double ***)calloc(k, sizeof(double **));
-    if (!clusters) goto cleanup;
-
-    centroids = (double **)calloc(k, sizeof(double *));
-    if (!centroids) goto cleanup;
-
-    updated_centroids = (double **)calloc(k, sizeof(double *));
-    if (!updated_centroids) goto cleanup;
+    if (!clusters) { ok = 0; goto cleanup; }
 
     counter_arr_copy = (int *)calloc(k, sizeof(int));
-    if (!counter_arr_copy) goto cleanup;
-
-    owned = (int *)calloc(k, sizeof(int));
-    if (!owned) goto cleanup;
-
-    for (i = 0; i < k; i++) {
-        centroids[i] = (double *)malloc(dim * sizeof(double));
-        if (!centroids[i]) goto cleanup;
-        owned[i] = 1;
-        for (l = 0; l < dim; l++) centroids[i][l] = points[i][l];
-    }
+    if (!counter_arr_copy) { ok = 0; goto cleanup; }
 
     for (i = 0; i < iter; i++) {
         counter_arr = count_cluster_points(k, centroids, points, dim, num_of_points);
-        if (!counter_arr) goto cleanup;
+        if (!counter_arr) { ok = 0; goto cleanup; }
 
         for (j = 0; j < k; j++) counter_arr_copy[j] = counter_arr[j];
 
-        /* allocate clusters arrays for this iteration */
+        /* allocate cluster pointer arrays */
         for (j = 0; j < k; j++) {
-            clusters[j] = (counter_arr[j] == 0) ? NULL : (double **)malloc(sizeof(double *) * counter_arr[j]);
-            if (counter_arr[j] != 0 && !clusters[j]) goto cleanup;
+            clusters[j] = (counter_arr[j] == 0) ? NULL
+                        : (double **)malloc(sizeof(double *) * counter_arr[j]);
+            if (counter_arr[j] != 0 && !clusters[j]) { ok = 0; goto cleanup; }
         }
 
+        /* fill clusters */
         for (j = 0; j < num_of_points; j++) {
             curr = find_closest_cluster(centroids, points[j], k, dim);
+            if (counter_arr[curr] <= 0) { ok = 0; goto cleanup; }  // mismatch = bug
             clusters[curr][counter_arr[curr] - 1] = points[j];
             counter_arr[curr]--;
+
         }
 
         convergence = 1;
 
+        /* update centroids in place */
         for (j = 0; j < k; j++) {
             if (counter_arr_copy[j] == 0) {
-                updated_centroids[j] = points[0]; /* unchanged behavior */
-            } else {
-                updated_centroids[j] = update_centroid(counter_arr_copy[j], dim, clusters[j]);
-                if (!updated_centroids[j]) goto cleanup;
-
+                /* empty cluster rule: centroid becomes points[0] (by VALUE) */
+                if (calculate_distance(centroids[j], points[0], dim) >= eps) convergence = 0;
                 for (l = 0; l < dim; l++) {
-                    if (fabs(centroids[j][l] - updated_centroids[j][l]) >= 0.001) {
-                        convergence = 0;
-                    }
+                    /*if (fabs(centroids[j][l] - points[0][l]) >= eps) convergence = 0;*/
+                    centroids[j][l] = points[0][l];
                 }
-            }
+            } else {
+                double *tmp = update_centroid(counter_arr_copy[j], dim, clusters[j]);
+                if (!tmp) { ok = 0; goto cleanup; }
 
-            /* swap + free old only if we own it */
-            old = centroids[j];
-            {
-                int old_owned = owned[j];
-
-                centroids[j] = updated_centroids[j];
-                owned[j] = (centroids[j] == points[0]) ? 0 : 1;
-
-                if (old_owned && old != NULL) free(old);
+                if (calculate_distance(centroids[j], tmp, dim) >= eps) convergence = 0;
+                for (l = 0; l < dim; l++) {
+                    /*if (fabs(centroids[j][l] - tmp[l]) >= eps) convergence = 0;*/
+                    centroids[j][l] = tmp[l];
+                }
+                free(tmp);
             }
         }
 
+        /* free per-iteration cluster arrays */
         for (l = 0; l < k; l++) {
             free(clusters[l]);
             clusters[l] = NULL;
@@ -167,45 +147,24 @@ static int cluster_handle(int k, int iter, int num_of_points, int dim, double **
         free(counter_arr);
         counter_arr = NULL;
 
-        if (convergence == 1) break;
+        if (convergence) break;
     }
 
-    print_centroids(k, dim, centroids);
-    status = 0;
-
 cleanup:
-    if (counter_arr) free(counter_arr);
+    free(counter_arr); /* ok if NULL */
 
     if (clusters) {
-        for (l = 0; l < k; l++) {
-            free(clusters[l]);
-        }
+        for (l = 0; l < k; l++) free(clusters[l]);
         free(clusters);
     }
 
-    if (centroids) {
-        if (owned) {
-            for (j = 0; j < k; j++) {
-                if (owned[j] && centroids[j]) free(centroids[j]);
-            }
-        } else {
-            /* fallback: free only non-NULL pointers (best effort) */
-            for (j = 0; j < k; j++) {
-                if (centroids[j]) free(centroids[j]);
-            }
-        }
-        free(centroids);
-    }
+    free(counter_arr_copy);
 
-    if (updated_centroids) free(updated_centroids);
-    if (counter_arr_copy) free(counter_arr_copy);
-    if (owned) free(owned);
-
-    return status;
+    return ok ? centroids : NULL;
 }
 
-double **fit(int k, int iter, int eps, double **centroids, int num_of_points, int dim, double **points){
-
+double **fit(int k, int iter, double eps, double **centroids, int num_of_points, int dim, double **points){
+    return cluster_handle(k, iter, eps, centroids, num_of_points, dim, points);
 }
 
 int main(int argc, char *argv[]) {
