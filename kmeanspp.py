@@ -96,7 +96,7 @@ def print_indices(centroids, points_arr):
     for point in centroids:
         for i in range(len(points_arr)):
             if same_point(point, points_arr[i]):
-                s = s + i + ","
+                s = s + f"{i},"
     s = s[0:-1]
     print(s)
 
@@ -156,7 +156,7 @@ def main():
         raise SystemExit(1)
     
     centroids = kmeansplus_Init(k, points_arr)
-
+    print_indices(centroids,points_arr)
     new_centroids = mykmeanssp.fit(k, iter, eps, centroids, len (points_arr), len(points_arr[0]), points_arr)
 
     print_centroids(new_centroids)
