@@ -109,3 +109,8 @@ static struct PyModuleDef kmeanssp_Module = {
     -1,
     kmeanssp_FunctionsTable
 };
+
+PyMODINIT_FUNC PyInit_kmeanssp(void) {
+    return PyModule_Create(&kmeanssp_Module);
+}
+
