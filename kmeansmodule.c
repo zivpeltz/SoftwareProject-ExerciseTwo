@@ -1,13 +1,21 @@
 #define PY_SSIZE_T_CLEAN
-#include <python.h>
+#include <Python.h>
+#include "kmeanslogic.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 
+/* helper: free a partially/fully allocated double** matrix */
+static void free_matrix(double **m, int rows_allocated) {
+    int i;
+    if (!m) return;
+    for (i = 0; i < rows_allocated; i++) {
+        free(m[i]);
+    }
+    free(m);
+}
 
-
-
-//wrapper function for fit()
+/* wrapper function for fit() */
 static PyObject *kmeansLib_fit(PyObject *self, PyObject *args) {
     int k;
     int iter;
@@ -17,78 +25,123 @@ static PyObject *kmeansLib_fit(PyObject *self, PyObject *args) {
     int dim;
     PyObject *points_list;
 
-    PyObject *point;
-    PyObject *coord;
+    PyObject *point = NULL;
+    PyObject *coord = NULL;
 
     int i, j;
+
+    double **centroids = NULL;
+    double **points = NULL;
+    double **new_centroids = NULL;
+
+    int centroids_rows_allocated = 0;
+    int points_rows_allocated = 0;
+
+    PyObject *result = NULL;
 
     if (!PyArg_ParseTuple(args, "iidOiiO", &k, &iter, &eps, &centroids_list, &num_of_points, &dim, &points_list)) {
         return NULL;
     }
 
     /* Allocate centroids */
-    double **centroids = (double **)malloc(k * sizeof(double *));
+    centroids = (double **)malloc((size_t)k * sizeof(double *));
+    if (!centroids) {
+        PyErr_NoMemory();
+        return NULL;
+    }
+    for (i = 0; i < k; i++) centroids[i] = NULL; /* so partial free is safe */
+
     for (i = 0; i < k; i++) {
-        centroids[i] = (double *)malloc(dim * sizeof(double));
-        point = PyList_GetItem(centroids_list, i);
+        centroids[i] = (double *)malloc((size_t)dim * sizeof(double));
+        if (!centroids[i]) {
+            PyErr_NoMemory();
+            goto cleanup;
+        }
+        centroids_rows_allocated++;
+
+        point = PyList_GetItem(centroids_list, i); /* borrowed ref */
         for (j = 0; j < dim; j++) {
-            coord = PyList_GetItem(point, j);
+            coord = PyList_GetItem(point, j);       /* borrowed ref */
             centroids[i][j] = PyFloat_AsDouble(coord);
+            /* Keeping your logic: no extra type/error checks beyond this */
         }
     }
 
     /* Allocate points */
-    double **points = (double **)malloc(num_of_points * sizeof(double *));
+    points = (double **)malloc((size_t)num_of_points * sizeof(double *));
+    if (!points) {
+        PyErr_NoMemory();
+        goto cleanup;
+    }
+    for (i = 0; i < num_of_points; i++) points[i] = NULL;
+
     for (i = 0; i < num_of_points; i++) {
-        points[i] = (double *)malloc(dim * sizeof(double));
-        point = PyList_GetItem(points_list, i);
+        points[i] = (double *)malloc((size_t)dim * sizeof(double));
+        if (!points[i]) {
+            PyErr_NoMemory();
+            goto cleanup;
+        }
+        points_rows_allocated++;
+
+        point = PyList_GetItem(points_list, i); /* borrowed ref */
         for (j = 0; j < dim; j++) {
-            coord = PyList_GetItem(point, j);
+            coord = PyList_GetItem(point, j);   /* borrowed ref */
             points[i][j] = PyFloat_AsDouble(coord);
+
         }
     }
 
     /* Call C k-means function (returns new centroids) */
-    double **new_centroids = fit(k, iter, eps, centroids, num_of_points, dim, points);
+    new_centroids = fit(k, iter, eps, centroids, num_of_points, dim, points);
+    if (new_centroids == NULL) {
+        PyErr_SetString(PyExc_RuntimeError, "kmeans fit failed");
+        goto cleanup;
+    }
 
     /* Convert result to Python list */
-    PyObject *result = PyList_New(k);
+    result = PyList_New(k);
+    if (!result) {
+        /* PyErr already set by CPython */
+        goto cleanup;
+    }
+
     for (i = 0; i < k; i++) {
         PyObject *centroid = PyList_New(dim);
-        for (j = 0; j < dim; j++) {
-            PyList_SetItem(
-                centroid,
-                j,
-                PyFloat_FromDouble(new_centroids[i][j])
-            );
+        if (!centroid) {
+            /* PyErr already set */
+            goto cleanup;
         }
+
+        for (j = 0; j < dim; j++) {
+            PyObject *val = PyFloat_FromDouble(new_centroids[i][j]);
+            if (!val) {
+                Py_DECREF(centroid);
+                goto cleanup;
+            }
+            /* steals ref to val */
+            PyList_SetItem(centroid, j, val);
+        }
+
+        /* steals ref to centroid */
         PyList_SetItem(result, i, centroid);
     }
 
-    /* Free input centroids */
-    for (i = 0; i < k; i++) {
-        free(centroids[i]);
-    }
-    free(centroids);
+cleanup:
+    /* Free C allocations (safe for partial alloc) */
+    free_matrix(points, points_rows_allocated);
+    free_matrix(centroids, centroids_rows_allocated);
 
-    /* Free points */
-    for (i = 0; i < num_of_points; i++) {
-        free(points[i]);
+    /* If we failed after creating result, decref it.
+       If success, result is returned and we must NOT decref it. */
+    if (result && PyErr_Occurred()) {
+        Py_DECREF(result);
+        result = NULL;
     }
-    free(points);
-
-    /* Free centroids returned by fit */
-    for (i = 0; i < k; i++) {
-        free(new_centroids[i]);
-    }
-    free(new_centroids);
 
     return result;
 }
 
-
-
-// module's function table
+/* module's function table */
 static PyMethodDef kmeanssp_FunctionsTable[] = {
     {
         "fit",                 /* name exposed to Python */
@@ -99,9 +152,7 @@ static PyMethodDef kmeanssp_FunctionsTable[] = {
     {NULL, NULL, 0, NULL}
 };
 
-
-
-// modules definition
+/* module definition */
 static struct PyModuleDef kmeanssp_Module = {
     PyModuleDef_HEAD_INIT,
     "kmeanssp",   /* module name */
@@ -113,4 +164,3 @@ static struct PyModuleDef kmeanssp_Module = {
 PyMODINIT_FUNC PyInit_kmeanssp(void) {
     return PyModule_Create(&kmeanssp_Module);
 }
-

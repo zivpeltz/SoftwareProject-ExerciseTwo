@@ -1,9 +1,9 @@
+#include "kmeanslogic.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 
-int global_num_of_points; /* global variables for total number of points */
-int global_dim;           /* global variables for total dimension of points */
+
 
 
 
