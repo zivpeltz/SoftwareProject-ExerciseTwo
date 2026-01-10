@@ -63,8 +63,8 @@ def parse_points(file_A, file_B):
 
 
 def main():
-    np.random.seed(1234)
     #reading user CMD arguments
+    np.random.seed(1234)
     provided_iter = 1 #in the case when iter is provided, the fields change index by 1
     if len(sys.argv) == 1 or len(sys.argv) > 6:
         print("An Error Has Occurred")
