@@ -7,25 +7,6 @@
 
 
 
-static int find_string_length(char *s) {
-    int c = 0;
-    while (*s++) c++;
-    return c;
-}
-
-
-
-static void print_centroids(int k, int dim, double **centroids) {
-    int i, j;
-    for (i = 0; i < k; i++) {
-        for (j = 0; j < dim; j++) {
-            if (j == dim - 1) printf("%.4f", centroids[i][j]);
-            else printf("%.4f,", centroids[i][j]);
-        }
-        printf("\n");
-    }
-}
-
 static double *update_centroid(int length_of_cluster, int dim, double **cluster) {
     double *updated_centroid = (double *)malloc(sizeof(double) * dim);
     int i, j;

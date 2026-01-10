@@ -17,15 +17,32 @@ def calculate_min_distance(centers, p):
             min = temp
     return min
 
+
+
 def kmeansplus_Init(k, points_arr):
-    x = np.random.choice(points_arr)
-    centers=[x]
-    for i in range (k-1):
-        distance_arr = [calculate_min_distance(centers, p) for p in points_arr]
-        sum = sum(distance_arr)
-        prob_arr = [distance_arr[n]/sum for n in range(len(points_arr))]
-        centers.append(np.random.choice(points_arr, p=prob_arr))
-    return centers
+
+    pts = np.asarray(points_arr, dtype=float)
+    n = len(pts)
+
+    idx = np.random.randint(n)
+    centers = [pts[idx]]
+
+    for _ in range(k - 1):
+        dist = np.array([calculate_min_distance(centers, p) for p in pts], dtype=float)
+        total = dist.sum()
+
+        # If all distances are 0 (e.g., identical points), fall back to uniform choice
+        if total == 0.0:
+            next_idx = np.random.randint(n)
+        else:
+            prob_arr = dist / total
+            next_idx = np.random.choice(n, p=prob_arr)
+
+        centers.append(pts[next_idx])
+
+    # Convert each centroid to a plain Python list
+    return [c.tolist() for c in centers]
+
 
 
 
@@ -57,7 +74,7 @@ def parse_points(file_A, file_B):
             temp_point.append(float(temp_data))
         points_arr.append(temp_point)
 
-    return points_arr
+    return points_arr , merged_points
 
 
 def print_centroids(centroids):
@@ -111,8 +128,7 @@ def main():
     file_name_a = sys.argv[3 + provided_iter] #we assume these are valid
     file_name_b = sys.argv[4 + provided_iter]
 
-    points_arr = parse_points(file_name_a, file_name_b)
-    print(points_arr)
+    points_arr , points_dataframe = parse_points(file_name_a, file_name_b)
 
     N = len(points_arr)
 
@@ -127,6 +143,7 @@ def main():
     centroids = kmeansplus_Init(k, points_arr)
     new_centroids = mykmeanssp.fit(k, iter, eps, centroids, len (points_arr), len(points_arr[0]), points_arr)
 
+    print_centroids(new_centroids)
 
 
 if __name__=="__main__":
