@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import sys
+import mykmeanssp
 
 def calculate_distance(p,q): #p and q are arrays representing points
     sum_of_deltas = 0
@@ -59,7 +60,13 @@ def parse_points(file_A, file_B):
     return points_arr
 
 
-
+def print_centroids(centroids):
+    for point in centroids:
+        s = ""
+        for cord in point:
+            s = s + f"{cord:.4f}" + ","
+        s = s[0:-1]
+        print(s)
 
 
 def main():
@@ -116,6 +123,11 @@ def main():
     if k < 2 or k > N - 1: #final check on k, depends on the length of the points array
         print("Incorrect number of clusters!")
         raise SystemExit(1)
+    
+    centroids = kmeansplus_Init(k, points_arr)
+    new_centroids = mykmeanssp.fit(k, iter, eps, centroids, len (points_arr), len(points_arr[0]), points_arr)
+    print_centroids(new_centroids)
+
 
 
 
