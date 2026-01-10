@@ -126,8 +126,6 @@ def main():
     
     centroids = kmeansplus_Init(k, points_arr)
     new_centroids = mykmeanssp.fit(k, iter, eps, centroids, len (points_arr), len(points_arr[0]), points_arr)
-    print_centroids(new_centroids)
-
 
 
 
