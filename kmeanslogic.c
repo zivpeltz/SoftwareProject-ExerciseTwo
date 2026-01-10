@@ -204,7 +204,7 @@ cleanup:
     return status;
 }
 
-double **fit(int k, int iter, int eps, double **centroids, int num_of_points, int dim, double **points){
+double **fit(int k, int iter, double eps, double **centroids, int num_of_points, int dim, double **points){
 
 }
 
