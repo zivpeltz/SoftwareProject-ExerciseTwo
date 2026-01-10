@@ -16,7 +16,7 @@ def calculate_min_distance(centers, p):
             min = temp
     return min
 
-def kmeansplus_Init(k, points_arr):
+def kmeans(k, points_arr):
     x = np.random.choice(points_arr)
     centers=[x]
     for i in range (k-1):
@@ -25,7 +25,6 @@ def kmeansplus_Init(k, points_arr):
         prob_arr = [distance_arr[n]/sum for n in range(len(points_arr))]
         centers.append(np.random.choice(points_arr, p=prob_arr))
     return centers
-    
     
         
 
