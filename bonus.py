@@ -1,10 +1,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.cluster import KMeans
-import sys
 import pandas as pd
 from sklearn.datasets import load_iris
-
 
 
 def main():
@@ -23,8 +21,7 @@ def main():
         kmeans.fit(iris_np_array)
         inertia_arr.append(kmeans.inertia_)
     
-    # 4. Plot results
-    # FIX: plt.plot uses positional arguments or (label=), not (x=, y=)
+    # Plot results
     plt.figure(figsize=(8, 5))
     plt.plot(k_range, inertia_arr, marker='o')
     plt.annotate('Elbow Point (k=3)', 
@@ -39,7 +36,6 @@ def main():
     plt.ylabel('Inertia')
     plt.grid(True)
     plt.show()
-
 
 
 
