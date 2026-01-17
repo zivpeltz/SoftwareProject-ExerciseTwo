@@ -17,6 +17,7 @@ static void free_matrix(double **m, int rows_allocated) {
 
 /* wrapper function for fit() */
 static PyObject *kmeansLib_fit(PyObject *self, PyObject *args) {
+	(void)self;
     int k;
     int iter;
     double eps;

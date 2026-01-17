@@ -148,6 +148,4 @@ double **fit(int k, int iter, double eps, double **centroids, int num_of_points,
     return cluster_handle(k, iter, eps, centroids, num_of_points, dim, points);
 }
 
-int main(int argc, char *argv[]) {
-   return 1;
-}
+

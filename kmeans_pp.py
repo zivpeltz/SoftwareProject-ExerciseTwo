@@ -20,20 +20,22 @@ def calculate_min_distance(centers, p):
 
 
 def kmeansplus_Init(k, points_arr):
-
     pts = np.asarray(points_arr, dtype=float)
     n = len(pts)
 
-    idx = np.random.randint(n)
+    # Select first center uniformly using choice
+    idx = np.random.choice(n)
     centers = [pts[idx]]
 
     for _ in range(k - 1):
+
         dist = np.array([calculate_min_distance(centers, p) for p in pts], dtype=float)
         total = dist.sum()
 
-        # If all distances are 0 (e.g., identical points), fall back to uniform choice
+        # If all distances are 0, fall back to uniform choice
         if total == 0.0:
-            next_idx = np.random.randint(n)
+            # Fallback to uniform selection using choice
+            next_idx = np.random.choice(n)
         else:
             prob_arr = dist / total
             next_idx = np.random.choice(n, p=prob_arr)
@@ -158,7 +160,11 @@ def main():
     
     centroids = kmeansplus_Init(k, points_arr)
     print_indices(centroids,points_arr,points_dataframe)
-    new_centroids = mykmeanssp.fit(k, iter, eps, centroids, len (points_arr), len(points_arr[0]), points_arr)
+    try:
+        new_centroids = mykmeanssp.fit(k, iter, eps, centroids, len(points_arr), len(points_arr[0]), points_arr)
+    except Exception:
+        print("An Error Has Occurred")
+        raise SystemExit(1)
 
     print_centroids(new_centroids)
 

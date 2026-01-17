@@ -35,8 +35,8 @@ def main():
     plt.xlabel('Number of clusters (k)')
     plt.ylabel('Inertia')
     plt.grid(True)
-    plt.show()
-
+    plt.savefig("elbow.png", bbox_inches="tight")
+    plt.close()
 
 
 
