@@ -91,14 +91,15 @@ def same_point(p,q):
             return False
     return True
 
-def print_indices(centroids, points_arr):
-    s = ""
-    for point in centroids:
+def print_indices(centroids, points_arr, points_dataframe):
+    keys = []
+    for c in centroids:
         for i in range(len(points_arr)):
-            if same_point(point, points_arr[i]):
-                s = s + f"{i},"
-    s = s[0:-1]
-    print(s)
+            if same_point(c, points_arr[i]):
+                keys.append(int(points_dataframe.iloc[i, 0]))
+                break
+    print(",".join(map(str, keys)))
+
 
 
 def main():
@@ -156,7 +157,7 @@ def main():
         raise SystemExit(1)
     
     centroids = kmeansplus_Init(k, points_arr)
-    print_indices(centroids,points_arr)
+    print_indices(centroids,points_arr,points_dataframe)
     new_centroids = mykmeanssp.fit(k, iter, eps, centroids, len (points_arr), len(points_arr[0]), points_arr)
 
     print_centroids(new_centroids)
