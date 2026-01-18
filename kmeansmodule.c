@@ -64,7 +64,6 @@ static PyObject *kmeansLib_fit(PyObject *self, PyObject *args) {
         for (j = 0; j < dim; j++) {
             coord = PyList_GetItem(point, j);       /* borrowed ref */
             centroids[i][j] = PyFloat_AsDouble(coord);
-            /* Keeping your logic: no extra type/error checks beyond this */
         }
     }
 
