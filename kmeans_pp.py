@@ -31,12 +31,14 @@ def kmeansplus_Init(k, points_arr):
     for _ in range(k - 1):
 
         dist = np.array([calculate_min_distance(centers, p) for p in pts], dtype=float)
+        dist[chosen] = 0.0 # exclude chosen points
         total = dist.sum()
 
         # If all distances are 0, fall back to uniform choice
         if total == 0.0:
             # Fallback to uniform selection using choice
-            next_idx = np.random.choice(n)
+            remaining = [i for i in range(n) if i not in chosen]
+            next_idx = np.random.choice(remaining) if remaining else np.random.choice(n)
         else:
             prob_arr = dist / total
             next_idx = np.random.choice(n, p=prob_arr)
