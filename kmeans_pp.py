@@ -26,6 +26,7 @@ def kmeansplus_Init(k, points_arr):
     # Select first center uniformly using choice
     idx = np.random.choice(n)
     centers = [pts[idx]]
+    chosen = [idx]
 
     for _ in range(k - 1):
 
@@ -41,9 +42,10 @@ def kmeansplus_Init(k, points_arr):
             next_idx = np.random.choice(n, p=prob_arr)
 
         centers.append(pts[next_idx])
+        chosen.append(next_idx)
 
-    # Convert each centroid to a plain Python list
-    return [c.tolist() for c in centers]
+    # Convert each centroid to a plain Python list, return indice array
+    return [c.tolist() for c in centers], chosen
 
 
 
@@ -86,21 +88,6 @@ def print_centroids(centroids):
             s = s + f"{cord:.4f}" + ","
         s = s[0:-1]
         print(s)
-
-def same_point(p,q):
-    for i in range(len(p)):
-        if(p[i] != q[i]):
-            return False
-    return True
-
-def print_indices(centroids, points_arr, points_dataframe):
-    keys = []
-    for c in centroids:
-        for i in range(len(points_arr)):
-            if same_point(c, points_arr[i]):
-                keys.append(int(points_dataframe.iloc[i, 0]))
-                break
-    print(",".join(map(str, keys)))
 
 
 
@@ -158,8 +145,10 @@ def main():
         print("Incorrect number of clusters!")
         raise SystemExit(1)
     
-    centroids = kmeansplus_Init(k, points_arr)
-    print_indices(centroids,points_arr,points_dataframe)
+    centroids, chosen = kmeansplus_Init(k, points_arr)
+    keys = [int(points_dataframe.iloc[i, 0]) for i in chosen] #extract keys from data frame
+    print(",".join(map(str, keys))) #print centroid keys
+
     try:
         new_centroids = mykmeanssp.fit(k, iter, eps, centroids, len(points_arr), len(points_arr[0]), points_arr)
     except Exception:
