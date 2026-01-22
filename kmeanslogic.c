@@ -89,7 +89,7 @@ static double **cluster_handle(int k, int iter, double eps, double **centroids, 
         /* fill clusters */
         for (j = 0; j < num_of_points; j++) {
             curr = find_closest_cluster(centroids, points[j], k, dim);
-            if (counter_arr[curr] <= 0) { ok = 0; goto cleanup; }  // mismatch = bug
+            if (counter_arr[curr] <= 0) { ok = 0; goto cleanup; }  /* mismatch = bug */
             clusters[curr][counter_arr[curr] - 1] = points[j];
             counter_arr[curr]--;
 
